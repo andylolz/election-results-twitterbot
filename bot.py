@@ -11,8 +11,9 @@ import requests
 
 import twitter
 
-
+# this was roughly when all the thumbs were regenerated
 thumbs_regenerated = "2015-04-06T23:00:00"
+# Abbreviated party names, for 140 character convenience
 party_lookup = {
     "Traditional Unionist Voice - TUV": "TUV",
     "Democratic Unionist Party - D.U.P.": "DUP",
@@ -42,6 +43,7 @@ party_lookup = {
     "The Peace Party - Non-violence, Justice, Environment": "Peace Party",
 }
 
+# Abbreviate party names, using lookup and other hacks
 def abbrev_party(party):
     if party in party_lookup:
         return party_lookup[party]
@@ -51,9 +53,11 @@ def abbrev_party(party):
         party = party[4:]
     return party
 
+# fetch locations (for geopositioning tweets)
 with open("locations.json") as f:
     locations = json.load(f)
 
+# log in
 t = twitter.TwitterAPI()
 
 # fetch all URLs tweeted
@@ -88,6 +92,8 @@ if len(sys.argv) > 1:
 
 for person_id in person_ids:
     if person_id in tweeted:
+        # if the thumbnail has been updated, we want to delete the tweet
+        # and tweet it again
         tweet_time = tweeted[person_id]["created_at"].strftime("%Y-%m-%dT%H:%M:%S")
         thumb_time = cvs[person_id]["thumb"]["created"]
         if thumb_time > thumbs_regenerated and thumb_time > tweet_time:
@@ -97,6 +103,7 @@ for person_id in person_ids:
         else:
             continue
 
+    # fetch candidate data from YNMP
     if candidates is None:
         urllib.urlretrieve("https://yournextmp.com/media/candidates.csv", "candidates.csv")
         with open("candidates.csv") as f:
@@ -105,13 +112,16 @@ for person_id in person_ids:
     else:
         time.sleep(60)
 
+    # download the thumb, so it can be embedded in the tweet
     image_filename = "%d.jpg" % person_id
     urllib.urlretrieve(cvs[person_id]["thumb"]["url"], image_filename)
 
+    # cc the candidate (if they're on twitter)
     c = candidates[person_id]
     if c["twitter_username"] != "":
         c["twitter_username"] = " /cc @%s" % c["twitter_username"]
 
+    # compose the tweet
     cv_url = cv_tmpl % person_id
     s = "s" if c["name"][-1] != "s" else ""
     status = status_tmpl.format(name=c["name"].decode("utf-8"), party=abbrev_party(c["party"]).decode("utf-8"), constituency=c["constituency"].decode("utf-8"), cv_url=cv_url, s=s, twitter=c["twitter_username"])
@@ -121,6 +131,7 @@ for person_id in person_ids:
         "filename": image_filename,
     }
 
+    # add a location if we have one
     l = locations[c["mapit_id"]] if c["mapit_id"] in locations else None
     if l:
         kw["lat"], kw["long"] = l
