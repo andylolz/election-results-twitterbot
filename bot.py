@@ -78,7 +78,7 @@ cv_tmpl = "http://cv.democracyclub.org.uk/show_cv/%d"
 
 candidates = None
 
-if len(sys.args) > 1:
+if len(sys.argv) > 1:
     person_ids = [sys.argv[1]]
 
 for person_id in person_ids:
