@@ -1,0 +1,7 @@
+# virtualenv
+env/
+
+# this is where the config lives
+vars.sh
+
+*.pyc
