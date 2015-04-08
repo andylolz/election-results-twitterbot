@@ -26,3 +26,6 @@ class TwitterAPI:
 
     def timeline(self, page=1):
         return self.api.user_timeline(count=200, page=page)
+
+    def delete(self, id):
+        return self.api.destroy_status(id)

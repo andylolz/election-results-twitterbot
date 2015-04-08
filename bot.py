@@ -12,6 +12,7 @@ import requests
 import twitter
 
 
+thumbs_regenerated = "2015-04-06T23:00:00"
 party_lookup = {
     "Traditional Unionist Voice - TUV": "TUV",
     "Democratic Unionist Party - D.U.P.": "DUP",
@@ -57,16 +58,20 @@ t = twitter.TwitterAPI()
 
 # fetch all URLs tweeted
 page = 1
-urls = []
+tweets = []
 while True:
     timeline = t.timeline(page=page)
     if timeline == []:
         break
-    urls = urls + [x.entities['urls'][0]['expanded_url'] for x in timeline if len(x.entities['urls']) > 0]
+    tweets = tweets + [{
+        "url": tweet.entities['urls'][0]['expanded_url'],
+        "created_at": tweet.created_at,
+        "id": tweet.id,
+    } for tweet in timeline if len(tweet.entities['urls']) > 0]
     page += 1
 
 # figure out the CVs we've already tweeted about
-tweeted = {int(url.split("/")[-1]): None for url in urls if re.match(r"^https?://cv.democracyclub.org.uk/show_cv/(\d+)$", url)}.keys()
+tweeted = {int(tweet["url"].split("/")[-1]): tweet for tweet in tweets if re.match(r"^https?://cv.democracyclub.org.uk/show_cv/(\d+)$", tweet["url"])}
 
 # fetch all CVs collected
 j = requests.get("http://cv.democracyclub.org.uk/cvs.json").json()
@@ -83,7 +88,14 @@ if len(sys.argv) > 1:
 
 for person_id in person_ids:
     if person_id in tweeted:
-        continue
+        tweet_time = tweeted[person_id]["created_at"].strftime("%Y-%m-%dT%H:%M:%S")
+        thumb_time = cvs[person_id]["thumb"]["created"]
+        if thumb_time > thumbs_regenerated and thumb_time > tweet_time:
+            print "perhaps the tweet from %s should be deleted?" % person_id
+            continue
+            # t.delete(tweeted[person_id]["id"])
+        else:
+            continue
 
     if candidates is None:
         urllib.urlretrieve("https://yournextmp.com/media/candidates.csv", "candidates.csv")
