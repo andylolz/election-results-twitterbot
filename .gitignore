@@ -4,4 +4,6 @@ env/
 # this is where the config lives
 vars.sh
 
+candidates.csv
+
 *.pyc

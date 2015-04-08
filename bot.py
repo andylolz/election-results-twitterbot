@@ -119,4 +119,3 @@ for person_id in person_ids:
     t.tweet(**kw)
 
     os.remove(image_filename)
-os.remove("candidates.csv")
