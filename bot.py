@@ -97,9 +97,8 @@ for person_id in person_ids:
         tweet_time = tweeted[person_id]["created_at"].strftime("%Y-%m-%dT%H:%M:%S")
         thumb_time = cvs[person_id]["thumb"]["created"]
         if thumb_time > thumbs_regenerated and thumb_time > tweet_time:
-            print "perhaps the tweet from %s should be deleted?" % person_id
-            continue
-            # t.delete(tweeted[person_id]["id"])
+            # Delete the tweet; have another go
+            t.delete(tweeted[person_id]["id"])
         else:
             continue
 
