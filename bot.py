@@ -95,7 +95,7 @@ for person_id in person_ids:
         # if the thumbnail has been updated, we want to delete the tweet
         # and tweet it again
         tweet_time = tweeted[person_id]["created_at"].strftime("%Y-%m-%dT%H:%M:%S")
-        thumb_time = cvs[person_id]["thumb"]["created"]
+        thumb_time = cvs[person_id]["thumb"]["last_modified"]
         if thumb_time > thumbs_regenerated and thumb_time > tweet_time:
             # Delete the tweet; have another go
             t.delete(tweeted[person_id]["id"])
