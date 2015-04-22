@@ -41,6 +41,8 @@ party_lookup = {
     "Young People's Party YPP": "Young People's Party",
     "Communist League Election Campaign": "Communist League",
     "The Peace Party - Non-violence, Justice, Environment": "Peace Party",
+    "Left Unity - Trade Unionists and Socialists": "Left Unity / TUSC",
+    "Labour and Co-operative Party": "Labour / Co-op",
 }
 
 # Abbreviate party names, using lookup and other hacks
