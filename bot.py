@@ -125,7 +125,8 @@ for person_id in person_ids:
     # compose the tweet
     cv_url = cv_tmpl % person_id
     s = "s" if c["name"][-1] != "s" else ""
-    status = status_tmpl.format(name=c["name"].decode("utf-8"), party=abbrev_party(c["party"]).decode("utf-8"), constituency=c["constituency"].decode("utf-8"), cv_url=cv_url, s=s, twitter=c["twitter_username"])
+    constituency = c["constituency"].decode("utf-8").replace(u' and ', u' & ')
+    status = status_tmpl.format(name=c["name"].decode("utf-8"), party=abbrev_party(c["party"]).decode("utf-8"), constituency=constituency, cv_url=cv_url, s=s, twitter=c["twitter_username"])
 
     kw = {
         "status": status,
