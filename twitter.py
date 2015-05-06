@@ -22,10 +22,16 @@ class TwitterAPI:
 
     def tweet(self, **kwargs):
         """Send a tweet"""
-        self.api.update_with_media(**kwargs)
-
-    def timeline(self, page=1):
-        return self.api.user_timeline(count=200, page=page)
+        if "filename" in kwargs:
+            return self.api.update_with_media(**kwargs)
+        else:
+            return self.api.update_status(**kwargs)
 
     def delete(self, id):
         return self.api.destroy_status(id)
+
+    def add_to_list(self, list_id, twitter_handle):
+        return self.api.add_list_member(list_id=list_id, screen_name=twitter_handle)
+
+    def remove_from_list(self, list_id, twitter_handle):
+        return self.api.remove_list_member(list_id=list_id, screen_name=twitter_handle)

@@ -2,7 +2,7 @@
 env/
 
 # this is where the config lives
-vars.sh
+vars.*
 
 candidates.csv
 

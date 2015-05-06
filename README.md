@@ -1,2 +1,2 @@
-# democlubCVs twitter bot
+# democlub results twitter bot
 
