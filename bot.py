@@ -14,46 +14,74 @@ import twitter
 # this was roughly when all the thumbs were regenerated
 thumbs_regenerated = "2015-04-06T23:00:00"
 # Abbreviated party names, for 140 character convenience
-party_lookup = {
+PARTY_LOOKUP = {
+    "Labour Party": "#labour",
+    "Labour and Co-operative Party": "#labour / Co-op",
+    "Conservative Party": "#conservative",
+    "Liberal Democrats": "#libdems",
+    "Scottish Green Party": "#greens",
+    "Green Party": "#greens",
+    "UK Independence Party (UK I P)": "#ukip",
+    "UK Independence Party (UKIP)": "#ukip",
+    "Democratic Unionist Party - D.U.P.": "#dup",
+    "Scottish National Party (SNP)": "#snp",
+    "Plaid Cymru - The Party of Wales": "#plaid15",
+    "SDLP (Social Democratic & Labour Party)": "#sdlp",
+    "The Respect Party": "#respectparty",
+
     "Traditional Unionist Voice - TUV": "TUV",
-    "Democratic Unionist Party - D.U.P.": "DUP",
+    "The Eccentric Party of Great Britain": "Eccentric Party",
     "British National Party": "BNP",
     "The Socialist Party of Great Britain": "Socialist Party",
     "Alliance - Alliance Party of Northern Ireland": "Alliance",
     "Pirate Party UK": "Pirate Party",
-    "UK Independence Party (UK I P)": "UKIP",
     "Alter Change - Politics. Only Different": "Alter Change",
-    "Christian Party \"Proclaiming Christ's Lordship\"": "Christian Party",
-    "Scottish National Party (SNP)": "SNP",
-    "Lincolnshire Independents Lincolnshire First": "Lincolnshire Independents",
-    "Plaid Cymru - The Party of Wales": "Plaid Cymru",
+    "Christian Party \"Proclaiming Christ's Lordship\"": "Christian",
+    "Lincolnshire Independents Lincolnshire First": "Lincolnshire Ind.",
     "An Independence from Europe": "Independence from Europe",
     "People First - Gwerin Gyntaf": "People First",
     "Mebyon Kernow - The Party for Cornwall": "Mebyon Kernow",
     "Communist Party of Britain": "Communist",
-    "Speaker seeking re-election": "",
+    "Speaker seeking re-election": "Speaker",
     "Liberty Great Britain": "Liberty GB",
-    "UK Independence Party (UKIP)": "UKIP",
     "National Liberal Party - True Liberalism": "National Liberal",
-    "Official Monster Raving Loony Party": "Monster Raving Loony",
-    "SDLP (Social Democratic & Labour Party)": "SDLP",
+    "Official Monster Raving Loony Party": "Raving Loony",
     "Trade Unionist and Socialist Coalition": "TUSC",
     "Young People's Party YPP": "Young People's Party",
     "Communist League Election Campaign": "Communist League",
     "The Peace Party - Non-violence, Justice, Environment": "Peace Party",
     "Left Unity - Trade Unionists and Socialists": "Left Unity / TUSC",
-    "Labour and Co-operative Party": "Labour / Co-op",
+    "Cannabis is Safer than Alcohol": "CISTA",
+    "Magna Carta Conservation Party Great Britain": "Magna Carta Conservation",
+    "Christian Peoples Alliance": "CPA",
+    "Restore the Family For Children's Sake": "Restore the Family",
+    "Red Flag - Anti-Corruption": "Red Flag",
+}
+
+CONSTITUENCY_LOOKUP = {
+    "Caithness, Sutherland and Easter Ross": "Caithness",
+    "Cumbernauld, Kilsyth and Kirkintilloch East": "Cumbernauld",
+    "East Kilbride, Strathaven and Lesmahagow": "East Kilbride",
+    "Dumfriesshire, Clydesdale and Tweeddale": "Dumfriesshire",
+    "Inverness, Nairn, Badenoch and Strathspey": "Inverness",
+    "Middlesbrough South and East Cleveland": "Middlesbrough South",
+    "Dumfriesshire, Clydesdale and Tweeddale": "Dumfriesshire",
+    "Normanton, Pontefract and Castleford": "Normanton",
 }
 
 # Abbreviate party names, using lookup and other hacks
 def abbrev_party(party):
-    if party in party_lookup:
-        return party_lookup[party]
+    if party in PARTY_LOOKUP:
+        return PARTY_LOOKUP[party]
     if party.endswith(" Party"):
         party = party[:-6]
     if party.startswith("The "):
         party = party[4:]
     return party
+
+def abbrev_constituency(constituency):
+    constituency = CONSTITUENCY_LOOKUP.get(constituency, constituency)
+    return constituency.replace(u' and ', u' & ')
 
 # fetch locations (for geopositioning tweets)
 with open("locations.json") as f:
@@ -125,7 +153,7 @@ for person_id in person_ids:
     # compose the tweet
     cv_url = cv_tmpl % person_id
     s = "s" if c["name"][-1] != "s" else ""
-    constituency = c["constituency"].decode("utf-8").replace(u' and ', u' & ')
+    constituency = abbrev_constituency(c["constituency"].decode("utf-8"))
     status = status_tmpl.format(name=c["name"].decode("utf-8"), party=abbrev_party(c["party"]).decode("utf-8"), constituency=constituency, cv_url=cv_url, s=s, twitter=c["twitter_username"])
 
     kw = {
