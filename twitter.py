@@ -20,6 +20,15 @@ class TwitterAPI:
         auth.set_access_token(access_token, access_token_secret)
         self.api = tweepy.API(auth)
 
+    def ignore_errors(func):
+        def func_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception, e:
+                print e
+        return func_wrapper
+
+    @ignore_errors
     def tweet(self, **kwargs):
         """Send a tweet"""
         if "filename" in kwargs:
@@ -27,11 +36,14 @@ class TwitterAPI:
         else:
             return self.api.update_status(**kwargs)
 
+    @ignore_errors
     def delete(self, id):
         return self.api.destroy_status(id)
 
+    @ignore_errors
     def add_to_list(self, list_id, twitter_handle):
         return self.api.add_list_member(list_id=list_id, screen_name=twitter_handle)
 
+    @ignore_errors
     def remove_from_list(self, list_id, twitter_handle):
         return self.api.remove_list_member(list_id=list_id, screen_name=twitter_handle)
