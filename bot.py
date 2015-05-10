@@ -64,6 +64,8 @@ PARTY_LOOKUP = {
 }
 
 CONSTITUENCY_LOOKUP = {
+    "South Basildon and East Thurrock": "South Basildon",
+    "Carmarthen West and South Pembrokeshire": "Carmarthen West",
     "Caithness, Sutherland and Easter Ross": "Caithness",
     "Cumbernauld, Kilsyth and Kirkintilloch East": "Cumbernauld",
     "East Kilbride, Strathaven and Lesmahagow": "East Kilbride",
