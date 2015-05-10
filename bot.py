@@ -105,15 +105,18 @@ def parse_feed():
     api_tmpl = "http://yournextmp.popit.mysociety.org/api/v0.1/persons/{}"
     status_tmpl = u"{constituency}! #YourNextMP is: {person_name} ({party}) https://yournextmp.com/person/{person_id}/{slug}{twitter_str}"
 
+    winners = {item['post_id']: item['winner_popit_person_id'] for item in feed.entries}
+
     # log in
     t = twitter.TwitterAPI()
 
     for item in feed.entries:
+        id_ = item['winner_popit_person_id']
         tweeted = r.get(item['post_id'])
         if tweeted:
             tweeted = pickle.loads(tweeted)
-            if tweeted['published_at'] >= item['published']:
-                # we've already tweeted this
+            if tweeted['person_id'] == winners[item['post_id']]:
+                # we've already tweeted the winner here
                 continue
             else:
                 print "delete old tweet: {}".format(tweeted['tweet_id'])
@@ -121,8 +124,10 @@ def parse_feed():
                 if tweeted['twitter_handle']:
                     print "remove old twitter handle: @{}".format(tweeted['twitter_handle'])
                     _ = t.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
+        if id_ != winners[item['post_id']]:
+            # don't tweet this - it's not the winner!
+            continue
         kw = {}
-        id_ = item['winner_popit_person_id']
         person = requests.get(api_tmpl.format(id_), verify=False).json()['result']
 
         if person.get('proxy_image'):
@@ -151,12 +156,13 @@ def parse_feed():
         print "Tweeting:", kw
         tweet = t.tweet(**kw)
 
-        # Save the tweet to redis
-        r.set(item['post_id'], pickle.dumps({
-            "published_at": item['published'],
-            "tweet_id": tweet.id,
-            "twitter_handle": twitter_handle,
-        }))
+        if tweet:
+            # Save the tweet to redis
+            r.set(item['post_id'], pickle.dumps({
+                "person_id": item['winner_popit_person_id'],
+                "tweet_id": tweet.id,
+                "twitter_handle": twitter_handle,
+            }))
 
         if kw.get('filename'):
             # Delete the downloaded image
