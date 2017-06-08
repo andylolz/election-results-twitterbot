@@ -115,7 +115,7 @@ def parse_feed():
         tweeted = db.get(post_id)
         if tweeted:
             tweeted = pickle.loads(tweeted)
-            if tweeted['person_id'] == winners[post_id]:
+            if tweeted['person_id'] == winners.get(post_id):
                 # we've already tweeted the winner here
                 continue
             else:
