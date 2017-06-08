@@ -133,7 +133,15 @@ def parse_feed():
         if item['election_slug'] != ge2017_slug:
             continue
         if item['retraction'] == '1':
-            # TODO: ignoring retractions for now
+            tweeted = db.get(post_id)
+            if tweeted:
+                tweeted = pickle.loads(tweeted)
+                if tweeted['person_id'] == winners.get(post_id):
+                    print('delete old tweet: {}'.format(tweeted['tweet_id']))
+                    tw.delete(tweeted['tweet_id'])
+                    if tweeted['twitter_handle']:
+                        print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
+                        _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
             continue
         person_id = item['winner_person_id']
         post_id = item['post_id']
