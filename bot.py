@@ -14,20 +14,24 @@ import twitter
 
 # Abbreviated party names, for 140 character convenience
 PARTY_LOOKUP = {
-    'Labour Party': '#Labour',
-    'Labour and Co-operative Party': '#Labour / Co-op',
-    'Conservative Party': '#Conservative',
-    'Liberal Democrats': '#LibDems',
-    'Scottish Green Party': '#Greens',
-    'Green Party': '#Greens',
-    'UK Independence Party (UK I P)': '#UKIP',
-    'UK Independence Party (UKIP)': '#UKIP',
-    'Democratic Unionist Party - D.U.P.': '#DUP',
-    'Scottish National Party (SNP)': '#SNP',
-    'Plaid Cymru - The Party of Wales': '#Plaid15',
-    'SDLP (Social Democratic & Labour Party)': '#SDLP',
+    'Labour Party': '@Labour',
+    'Labour and Co-operative Party': '@Labour / Co-op',
+    'Conservative and Unionist Party': '@Conservatives',
+    'Liberal Democrats': '@LibDems',
+    'Scottish Green Party': '@TheGreenParty',
+    'Green Party': '@TheGreenParty',
+    'UK Independence Party (UK I P)': '@UKIP',
+    'UK Independence Party (UKIP)': '@UKIP',
+    'Democratic Unionist Party - D.U.P.': '@duponline',
+    'Scottish National Party (SNP)': 'theSNP',
+    'Plaid Cymru - The Party of Wales': '@Plaid_Cymru',
+    'SDLP (Social Democratic & Labour Party)': '@SDLPlive',
     'The Respect Party': '#RespectParty',
 
+    'Scotland\'s Independence Referendum Party': 'Scots Indy Ref',
+    'Independent Save Withybush Save Lives': 'Save Withybush Save Lives',
+    'Greater Manchester Homeless Voice': 'Homeless Voice',
+    'People Before Profit Alliance': 'People Before Profit',
     'Traditional Unionist Voice - TUV': 'TUV',
     'The Eccentric Party of Great Britain': 'Eccentric Party',
     'British National Party': 'BNP',
@@ -35,7 +39,7 @@ PARTY_LOOKUP = {
     'Alliance - Alliance Party of Northern Ireland': 'Alliance',
     'Pirate Party UK': 'Pirate Party',
     'Alter Change - Politics. Only Different': 'Alter Change',
-    'Christian Party "Proclaiming Christ\'s Lordship': 'Christian',
+    'Christian Party "Proclaiming Christ\'s Lordship"': 'Christian',
     'Lincolnshire Independents Lincolnshire First': 'Lincolnshire Ind.',
     'An Independence from Europe': 'Independence from Europe',
     'People First - Gwerin Gyntaf': 'People First',
@@ -61,16 +65,32 @@ PARTY_LOOKUP = {
 }
 
 CONSTITUENCY_LOOKUP = {
-    'South Basildon and East Thurrock': 'South Basildon',
-    'Carmarthen West and South Pembrokeshire': 'Carmarthen West',
-    'Caithness, Sutherland and Easter Ross': 'Caithness',
-    'Cumbernauld, Kilsyth and Kirkintilloch East': 'Cumbernauld',
-    'East Kilbride, Strathaven and Lesmahagow': 'East Kilbride',
-    'Dumfriesshire, Clydesdale and Tweeddale': 'Dumfriesshire',
-    'Inverness, Nairn, Badenoch and Strathspey': 'Inverness',
-    'Middlesbrough South and East Cleveland': 'Middlesbrough South',
-    'Dumfriesshire, Clydesdale and Tweeddale': 'Dumfriesshire',
-    'Normanton, Pontefract and Castleford': 'Normanton',
+    'Cardiff West': 'Cardiff W',
+    'Edinburgh West': 'Edinburgh W',
+    'Kingston upon Hull North': 'Kingston on Hull N',
+    'Kingston upon Hull West': 'Kingston on Hull W',
+    'Manchester Central': 'Manchester Ctl',
+    'Newcastle upon Tyne North': 'Newcastle North',
+    'North East Bedfordshire': 'NE Bedfordshire',
+    'North East Cambridgeshire': 'NE Cambridgeshire',
+    'North East Derbyshire': 'NE Derbyshire',
+    'North East Fife': 'NE Fife',
+    'Nottingham East': 'Nottingham E',
+    'Oxford East': 'Oxford E',
+    'South East Cambridgeshire': 'SE Cambridgeshire',
+    'South Swindon': 'S Swindon',
+    'South West Bedfordshire': 'SW Bedfordshire',
+    'South West Hertfordshire': 'SW Hertfordshire',
+    'South West Surrey': 'SW Surrey',
+    'South West Wiltshire': 'SW Wiltshire',
+    'Stoke-on-Trent Central': 'Stoke Central',
+    'West Tyrone': 'W Tyrone',
+    'Wolverhampton South East': 'Wolverhampton SE',
+    'Wyre Forest': 'Wyre',
+}
+
+PERSON_NAME_LOOKUP = {
+    'Michael Andrew Christopher Deem': 'Michael Deem',
 }
 
 # Abbreviate party names, using lookup and other hacks
@@ -84,7 +104,6 @@ def abbrev_party(party):
     return party
 
 def abbrev_constituency(constituency):
-    constituency = CONSTITUENCY_LOOKUP.get(constituency, constituency)
     return constituency.replace(' and ', ' & ')
 
 # fetch locations (for geopositioning tweets)
@@ -101,7 +120,8 @@ def parse_feed():
     feed = feedparser.parse('https://candidates.democracyclub.org.uk/results/all.atom')
 
     api_tmpl = 'https://candidates.democracyclub.org.uk/api/v0.9/persons/{}/?format=json'
-    status_tmpl = '{constituency}! Your new MP is: {person_name} ({party}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str}'
+    status_tmpl = '{constituency}! Your MP is: {person_name} ({party}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str} #GE2017'
+    test_status_tmpl = '{constituency}! Your MP is: {person_name} ({party}){twitter_str} #GE2017'
 
     winners = {item['post_id']: item['winner_person_id'] for item in feed.entries if item['election_slug'] == ge2017_slug and item['retraction'] != '1'}
 
@@ -148,6 +168,25 @@ def parse_feed():
         constituency_name = abbrev_constituency(item['post_name'])
         party_name = abbrev_party(item['winner_party_name'])
         person_name = item['winner_person_name']
+
+        test_status = test_status_tmpl.format(
+            constituency=constituency_name,
+            person_name=person_name,
+            party=party_name,
+            twitter_str=twitter_str,
+        )
+        if len(test_status) > 91:
+            constituency_name = constituency_name.split(',')[0].split(' &')[0]
+            constituency_name = CONSTITUENCY_LOOKUP.get(constituency_name, constituency_name)
+
+        test_status = test_status_tmpl.format(
+            constituency=constituency_name,
+            person_name=person_name,
+            party=party_name,
+            twitter_str=twitter_str,
+        )
+        if len(test_status) > 91:
+            person_name = PERSON_NAME_LOOKUP.get(person_name, person_name)
 
         kw['status'] = status_tmpl.format(
             constituency=constituency_name,
