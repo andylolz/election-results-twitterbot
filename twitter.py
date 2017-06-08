@@ -31,7 +31,7 @@ class TwitterAPI:
     @ignore_errors
     def tweet(self, **kwargs):
         """Send a tweet"""
-        if "filename" in kwargs:
+        if 'filename' in kwargs:
             return self.api.update_with_media(**kwargs)
         else:
             return self.api.update_status(**kwargs)
