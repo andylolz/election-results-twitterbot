@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 import os
+
 import tweepy
 
 
@@ -24,8 +24,8 @@ class TwitterAPI:
         def func_wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
         return func_wrapper
 
     @ignore_errors
