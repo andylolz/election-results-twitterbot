@@ -124,9 +124,6 @@ def parse_feed():
                 if tweeted['twitter_handle']:
                     print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
                     _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
-        if person_id != winners[post_id]:
-            # don't tweet this - it's not the winner!
-            continue
         kw = {}
         person = requests.get(api_tmpl.format(person_id)).json()
 
