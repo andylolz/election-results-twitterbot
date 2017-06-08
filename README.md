@@ -1,2 +1,2 @@
-# democlub results twitter bot
+# Election Results Twitterbot
 
