@@ -14,79 +14,43 @@ import twitter
 
 # Abbreviated party names, for 140 character convenience
 PARTY_LOOKUP = {
-    'Labour Party': '@Labour',
-    'Labour and Co-operative Party': '@Labour / Co-op',
+    'Labour Party': '@UKLabour',
+    'Labour and Co-operative Party': '@UKLabour / Co-op',
     'Conservative and Unionist Party': '@Conservatives',
     'Liberal Democrats': '@LibDems',
     'Scottish Green Party': '@TheGreenParty',
     'Green Party': '@TheGreenParty',
-    'UK Independence Party (UK I P)': '@UKIP',
     'UK Independence Party (UKIP)': '@UKIP',
     'Democratic Unionist Party - D.U.P.': '@duponline',
     'Scottish National Party (SNP)': 'theSNP',
     'Plaid Cymru - The Party of Wales': '@Plaid_Cymru',
     'SDLP (Social Democratic & Labour Party)': '@SDLPlive',
-    'The Respect Party': '#RespectParty',
 
+    'Speaker seeking re-election': 'Speaker',
+    'Christian Peoples Alliance': 'CPA',
+    'Official Monster Raving Loony Party': 'Raving Loony',
+    'Communist League Election Campaign': 'Communist League',
+    'Pirate Party UK': 'Pirate Party',
     'Scotland\'s Independence Referendum Party': 'Scots Indy Ref',
     'Independent Save Withybush Save Lives': 'Save Withybush Save Lives',
     'Greater Manchester Homeless Voice': 'Homeless Voice',
     'People Before Profit Alliance': 'People Before Profit',
     'Traditional Unionist Voice - TUV': 'TUV',
-    'The Eccentric Party of Great Britain': 'Eccentric Party',
     'British National Party': 'BNP',
     'The Socialist Party of Great Britain': 'Socialist Party',
     'Alliance - Alliance Party of Northern Ireland': 'Alliance',
-    'Pirate Party UK': 'Pirate Party',
-    'Alter Change - Politics. Only Different': 'Alter Change',
     'Christian Party "Proclaiming Christ\'s Lordship"': 'Christian',
-    'Lincolnshire Independents Lincolnshire First': 'Lincolnshire Ind.',
-    'An Independence from Europe': 'Independence from Europe',
-    'People First - Gwerin Gyntaf': 'People First',
-    'Mebyon Kernow - The Party for Cornwall': 'Mebyon Kernow',
-    'Communist Party of Britain': 'Communist',
-    'Speaker seeking re-election': 'Speaker',
-    'Liberty Great Britain': 'Liberty GB',
-    'National Liberal Party - True Liberalism': 'National Liberal',
-    'Official Monster Raving Loony Party': 'Raving Loony',
-    'Trade Unionist and Socialist Coalition': 'TUSC',
     'Young People\'s Party YPP': 'Young People\'s Party',
-    'Communist League Election Campaign': 'Communist League',
     'The Peace Party - Non-violence, Justice, Environment': 'Peace Party',
-    'Left Unity - Trade Unionists and Socialists': 'Left Unity / TUSC',
-    'Cannabis is Safer than Alcohol': 'CISTA',
-    'Magna Carta Conservation Party Great Britain': 'Magna Carta Conservation',
-    'Christian Peoples Alliance': 'CPA',
-    'Restore the Family For Children\'s Sake': 'Restore the Family',
-    'Red Flag - Anti-Corruption': 'Red Flag',
-    'Al-Zebabist Nation of Ooog': 'Ooog',
-    'Children of the Atom': 'Atom',
-    'Bournemouth Independent Alliance': 'BIA',
 }
 
 CONSTITUENCY_LOOKUP = {
-    'Cardiff West': 'Cardiff W',
-    'Edinburgh West': 'Edinburgh W',
-    'Kingston upon Hull North': 'Kingston on Hull N',
-    'Kingston upon Hull West': 'Kingston on Hull W',
-    'Manchester Central': 'Manchester Ctl',
-    'Newcastle upon Tyne North': 'Newcastle North',
-    'North East Bedfordshire': 'NE Bedfordshire',
-    'North East Cambridgeshire': 'NE Cambridgeshire',
-    'North East Derbyshire': 'NE Derbyshire',
-    'North East Fife': 'NE Fife',
-    'Nottingham East': 'Nottingham E',
-    'Oxford East': 'Oxford E',
-    'South East Cambridgeshire': 'SE Cambridgeshire',
-    'South Swindon': 'S Swindon',
-    'South West Bedfordshire': 'SW Bedfordshire',
-    'South West Hertfordshire': 'SW Hertfordshire',
-    'South West Surrey': 'SW Surrey',
-    'South West Wiltshire': 'SW Wiltshire',
-    'Stoke-on-Trent Central': 'Stoke Central',
-    'West Tyrone': 'W Tyrone',
-    'Wolverhampton South East': 'Wolverhampton SE',
+    'Birmingham, Selly Oak': 'B\'ham Selly Oak',
+    'Houghton & Sunderland S': 'Sunderland S',
+    'Newcastle upon Tyne N': 'Newcastle N',
+    'Stoke-on-Trent Ctl': 'Stoke Ctl',
     'Wyre Forest': 'Wyre',
+    'Kingston upon Hull W': 'Kingston on Hull W',
 }
 
 PERSON_NAME_LOOKUP = {
@@ -114,14 +78,23 @@ with open('locations.json') as f:
 redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 db = redis.from_url(redis_url)
 
+def delete_old_tweet(tw, tweeted):
+    print('delete old tweet: {}'.format(tweeted['tweet_id']))
+    tw.delete(tweeted['tweet_id'])
+    if tweeted['twitter_handle']:
+        print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
+        _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
+
 def parse_feed():
     # print('fetching results feed ...')
     ge2017_slug = 'parl.2017-06-08'
+    # I can't remember why this is correct
+    max_tweet_length = 91
     feed = feedparser.parse('https://candidates.democracyclub.org.uk/results/all.atom')
 
     api_tmpl = 'https://candidates.democracyclub.org.uk/api/v0.9/persons/{}/?format=json'
-    status_tmpl = '{constituency}! Your MP is: {person_name} ({party}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str} #GE2017'
-    test_status_tmpl = '{constituency}! Your MP is: {person_name} ({party}){twitter_str} #GE2017'
+    status_tmpl = '{constituency_name}! Your MP is: {person_name} ({party_name}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str} #GE2017'
+    test_status_tmpl = '{constituency_name}! Your MP is: {person_name} ({party_name}){twitter_str} #GE2017'
 
     winners = {item['post_id']: item['winner_person_id'] for item in feed.entries if item['election_slug'] == ge2017_slug and item['retraction'] != '1'}
 
@@ -137,11 +110,7 @@ def parse_feed():
             if tweeted:
                 tweeted = pickle.loads(tweeted)
                 if tweeted['person_id'] == winners.get(post_id):
-                    print('delete old tweet: {}'.format(tweeted['tweet_id']))
-                    tw.delete(tweeted['tweet_id'])
-                    if tweeted['twitter_handle']:
-                        print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
-                        _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
+                    delete_old_tweet(tw, tweeted)
             continue
         person_id = item['winner_person_id']
         post_id = item['post_id']
@@ -152,23 +121,18 @@ def parse_feed():
                 # we've already tweeted the winner here
                 continue
             else:
-                print('delete old tweet: {}'.format(tweeted['tweet_id']))
-                tw.delete(tweeted['tweet_id'])
-                if tweeted['twitter_handle']:
-                    print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
-                    _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
+                delete_old_tweet(tw, tweeted)
 
         person = requests.get(api_tmpl.format(person_id)).json()
 
-        if person.get('thumbnail'):
-            thumbnail_url = person.get('thumbnail')
+        thumbnail_url = person.get('thumbnail')
+        if thumbnail_url:
             kw['filename'] = thumbnail_url.rsplit('/', 1)[1]
             # fetch the image
             urllib.request.urlretrieve(thumbnail_url, kw['filename'])
 
         # cc the candidate (if they're on twitter)
         twitter_handle = person['versions'][0]['data'].get('twitter_username')
-        twitter_str = ' @{}'.format(twitter_handle) if twitter_handle else ''
         if twitter_handle:
             _ = tw.add_to_list(os.getenv('TWITTER_LIST_ID'), twitter_handle)
 
@@ -176,34 +140,40 @@ def parse_feed():
         constituency_name = abbrev_constituency(item['post_name'])
         party_name = abbrev_party(item['winner_party_name'])
         person_name = item['winner_person_name']
+        tb = {
+            'twitter_str': ' @{}'.format(twitter_handle) if twitter_handle else '',
+            'constituency_name': constituency_name,
+            'party_name': party_name,
+            'person_name': person_name,
+        }
 
-        test_status = test_status_tmpl.format(
-            constituency=constituency_name,
-            person_name=person_name,
-            party=party_name,
-            twitter_str=twitter_str,
-        )
-        if len(test_status) > 91:
-            constituency_name = constituency_name.split(',')[0].split(' &')[0]
+        test_status = test_status_tmpl.format(**tb)
+        if len(test_status) > max_tweet_length:
+            constituency_name = constituency_name.replace('East ', 'E ').replace(' East', ' E')
+            constituency_name = constituency_name.replace('West ', 'W ').replace(' West', ' W')
+            constituency_name = constituency_name.replace('North ', 'N ').replace(' North', ' N')
+            constituency_name = constituency_name.replace('South ', 'S ').replace(' South', ' S')
+            constituency_name = constituency_name.replace('Central ', 'Ctl ').replace(' Central', ' Ctl')
+            tb['constituency_name'] = constituency_name
+
+        test_status = test_status_tmpl.format(**tb)
+        if len(test_status) > max_tweet_length:
             constituency_name = CONSTITUENCY_LOOKUP.get(constituency_name, constituency_name)
+            tb['constituency_name'] = constituency_name
 
-        test_status = test_status_tmpl.format(
-            constituency=constituency_name,
-            person_name=person_name,
-            party=party_name,
-            twitter_str=twitter_str,
-        )
-        if len(test_status) > 91:
+        test_status = test_status_tmpl.format(**tb)
+        if len(test_status) > max_tweet_length:
+            constituency_name = constituency_name.split(',')[0].split(' & ')[0]
+            tb['constituency_name'] = constituency_name
+
+        test_status = test_status_tmpl.format(**tb)
+        if len(test_status) > max_tweet_length:
             person_name = PERSON_NAME_LOOKUP.get(person_name, person_name)
+            tb['person_name'] = person_name
 
-        kw['status'] = status_tmpl.format(
-            constituency=constituency_name,
-            person_name=person_name,
-            party=party_name,
-            person_id=person_id,
-            twitter_str=twitter_str,
-            slug=slugify(person_name)
-        )
+        tb['person_id'] = person_id
+        tb['slug'] = slugify(person_name)
+        kw['status'] = status_tmpl.format(**tb)
 
         # add a location if we have one
         l = locations[post_id] if post_id in locations else None
