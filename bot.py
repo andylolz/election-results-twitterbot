@@ -1,9 +1,6 @@
-import csv
 import json
-import re
 import os
 import pickle
-import sys
 import time
 import urllib
 
@@ -96,58 +93,70 @@ with open('locations.json') as f:
 
 # print('fetching redis ...')
 redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
-r = redis.from_url(redis_url)
+db = redis.from_url(redis_url)
 
 def parse_feed():
     # print('fetching results feed ...')
+    ge2017_slug = 'parl.2017-06-08'
     feed = feedparser.parse('https://candidates.democracyclub.org.uk/results/all.atom')
 
-    api_tmpl = 'http://yournextmp.popit.mysociety.org/api/v0.1/persons/{}'
-    status_tmpl = '{constituency}! #YourNextMP is: {person_name} ({party}) https://yournextmp.com/person/{person_id}/{slug}{twitter_str}'
+    api_tmpl = 'https://candidates.democracyclub.org.uk/api/v0.9/persons/{}/?format=json'
+    status_tmpl = '{constituency}! #YourNextMP is: {person_name} ({party}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str}'
 
-    winners = {item['post_id']: item['winner_popit_person_id'] for item in feed.entries}
+    # TODO: this ignores retractions currently
+    winners = {item['post_id']: item['winner_person_id'] for item in feed.entries if item['election_slug'] == ge2017_slug and item['retraction'] != '1'}
 
     # log in
-    t = twitter.TwitterAPI()
+    tw = twitter.TwitterAPI()
 
     for item in feed.entries:
-        id_ = item['winner_popit_person_id']
-        tweeted = r.get(item['post_id'])
+        person_id = item['winner_person_id']
+        post_id = item['post_id']
+        tweeted = db.get(post_id)
         if tweeted:
             tweeted = pickle.loads(tweeted)
-            if tweeted['person_id'] == winners[item['post_id']]:
+            if tweeted['person_id'] == winners[post_id]:
                 # we've already tweeted the winner here
                 continue
             else:
                 print('delete old tweet: {}'.format(tweeted['tweet_id']))
-                t.delete(tweeted['tweet_id'])
+                tw.delete(tweeted['tweet_id'])
                 if tweeted['twitter_handle']:
                     print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
-                    _ = t.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
-        if id_ != winners[item['post_id']]:
+                    _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
+        if person_id != winners[post_id]:
             # don't tweet this - it's not the winner!
             continue
         kw = {}
-        person = requests.get(api_tmpl.format(id_), verify=False).json()['result']
+        person = requests.get(api_tmpl.format(person_id)).json()
 
-        if person.get('proxy_image'):
-            kw['filename'] = '{}.png'.format(id_)
+        if person.get('thumbnail'):
+            thumbnail_url = person.get('thumbnail')
+            kw['filename'] = thumbnail_url.rsplit('/', 1)[1]
             # fetch the image
-            urllib.urlretrieve('{}/200/0'.format(person['proxy_image']), kw['filename'])
+            urllib.urlretrieve(thumbnail_url, kw['filename'])
 
         # cc the candidate (if they're on twitter)
         twitter_handle = person['versions'][0]['data'].get('twitter_username')
         twitter_str = ' @{}'.format(twitter_handle) if twitter_handle else ''
         if twitter_handle:
-            _ = t.add_to_list(os.getenv('TWITTER_LIST_ID'), twitter_handle)
+            _ = tw.add_to_list(os.getenv('TWITTER_LIST_ID'), twitter_handle)
 
         # compose the tweet
-        constituency = abbrev_constituency(person['standing_in']['2015']['name'])
-        party = abbrev_party(person['party_memberships']['2015']['name'])
-        kw['status'] = status_tmpl.format(constituency=constituency, person_name=person['name'], party=party, person_id=id_, twitter_str=twitter_str, slug=slugify(person['name']))
+        constituency_name = abbrev_constituency(item['post_name'])
+        party_name = abbrev_party(item['winner_party_name'])
+        person_name = item['winner_person_name']
+
+        kw['status'] = status_tmpl.format(
+            constituency=constituency_name,
+            person_name=person_name,
+            party=party_name,
+            person_id=person_id,
+            twitter_str=twitter_str,
+            slug=slugify(person_name)
+        )
 
         # add a location if we have one
-        post_id = person['standing_in']['2015']['post_id']
         l = locations[post_id] if post_id in locations else None
         if l:
             kw['lat'], kw['long'] = l
@@ -155,12 +164,12 @@ def parse_feed():
         # Send a tweet here!
         print('Tweeting:')
         print(json.dumps(kw, indent=4))
-        tweet = t.tweet(**kw)
+        tweet = tw.tweet(**kw)
 
         if tweet:
             # Save the tweet to redis
-            r.set(item['post_id'], pickle.dumps({
-                'person_id': item['winner_popit_person_id'],
+            db.set(post_id, pickle.dumps({
+                'person_id': person_id,
                 'tweet_id': tweet.id,
                 'twitter_handle': twitter_handle,
             }))
