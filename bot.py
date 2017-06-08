@@ -110,6 +110,8 @@ def parse_feed():
     tw = twitter.TwitterAPI()
 
     for item in feed.entries:
+        if item['election_slug'] != ge2017_slug:
+            continue
         person_id = item['winner_person_id']
         post_id = item['post_id']
         tweeted = db.get(post_id)
