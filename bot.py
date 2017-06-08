@@ -103,7 +103,6 @@ def parse_feed():
     api_tmpl = 'https://candidates.democracyclub.org.uk/api/v0.9/persons/{}/?format=json'
     status_tmpl = '{constituency}! Your new MP is: {person_name} ({party}) https://whocanivotefor.co.uk/person/{person_id}/{slug}{twitter_str}'
 
-    # TODO: this ignores retractions currently
     winners = {item['post_id']: item['winner_person_id'] for item in feed.entries if item['election_slug'] == ge2017_slug and item['retraction'] != '1'}
 
     # log in
@@ -111,6 +110,9 @@ def parse_feed():
 
     for item in feed.entries:
         if item['election_slug'] != ge2017_slug:
+            continue
+        if item['retraction'] == '1':
+            # TODO: ignoring retractions for now
             continue
         person_id = item['winner_person_id']
         post_id = item['post_id']
