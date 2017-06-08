@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 import feedparser
 
-url = "https://edit.yournextmp.com/results/all.atom"
+
+url = 'https://candidates.democracyclub.org.uk/results/all.atom'
 feed = feedparser.parse(url)
 
 entries = {x['post_id']: x for x in feed.entries}.values()
@@ -13,6 +13,6 @@ for x in entries:
     results[x['winner_party_name']] += 1
 
 for x, y in results.items():
-    print x, y
+    print(x, y)
 
-print len(entries)
+print(len(entries))
