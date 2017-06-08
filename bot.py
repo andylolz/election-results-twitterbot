@@ -2,7 +2,7 @@ import json
 import os
 import pickle
 import time
-import urllib
+import urllib.request
 
 import feedparser
 import redis
@@ -109,6 +109,7 @@ def parse_feed():
     tw = twitter.TwitterAPI()
 
     for item in feed.entries:
+        kw = {}
         if item['election_slug'] != ge2017_slug:
             continue
         if item['retraction'] == '1':
@@ -128,14 +129,14 @@ def parse_feed():
                 if tweeted['twitter_handle']:
                     print('remove old twitter handle: @{}'.format(tweeted['twitter_handle']))
                     _ = tw.remove_from_list(os.getenv('TWITTER_LIST_ID'), tweeted['twitter_handle'])
-        kw = {}
+
         person = requests.get(api_tmpl.format(person_id)).json()
 
         if person.get('thumbnail'):
             thumbnail_url = person.get('thumbnail')
             kw['filename'] = thumbnail_url.rsplit('/', 1)[1]
             # fetch the image
-            urllib.urlretrieve(thumbnail_url, kw['filename'])
+            urllib.request.urlretrieve(thumbnail_url, kw['filename'])
 
         # cc the candidate (if they're on twitter)
         twitter_handle = person['versions'][0]['data'].get('twitter_username')
