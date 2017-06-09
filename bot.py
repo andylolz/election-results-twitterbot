@@ -22,7 +22,7 @@ PARTY_LOOKUP = {
     'Green Party': '@TheGreenParty',
     'UK Independence Party (UKIP)': '@UKIP',
     'Democratic Unionist Party - D.U.P.': '@duponline',
-    'Scottish National Party (SNP)': 'theSNP',
+    'Scottish National Party (SNP)': '@theSNP',
     'Plaid Cymru - The Party of Wales': '@Plaid_Cymru',
     'SDLP (Social Democratic & Labour Party)': '@SDLPlive',
 
