@@ -106,11 +106,6 @@ def parse_feed():
         if item['election_slug'] != ge2017_slug:
             continue
         if item['retraction'] == '1':
-            tweeted = db.get(post_id)
-            if tweeted:
-                tweeted = pickle.loads(tweeted)
-                if tweeted['person_id'] == winners.get(post_id):
-                    delete_old_tweet(tw, tweeted)
             continue
         person_id = item['winner_person_id']
         post_id = item['post_id']
